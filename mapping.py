@@ -2,35 +2,8 @@ import pyautogui
 import time
 import pandas as pd
 import numpy as np
-from PIL import ImageGrab
-import pytesseract
-from PIL import Image, ImageEnhance, ImageFilter
-from textblob import TextBlob
-import time
-import datetime
-import csv
 import cv2
-from ctypes import *
-from Levenshtein import distance as lev
-import discord
-import os
-import pytesseract
-import pygetwindow
-import win32con
-import win32gui
-import win32ui
-import win32api
-import numpy as np
-import pandas as pd
-import winsound
-import time
-import re
-import random
-import pyautogui
-from threading import Thread
-from requests import get
-from getpass import getpass
-from sqlalchemy import create_engine
+from PIL import ImageGrab
 from PIL import Image
 from pynput import keyboard
 from pynput.keyboard import Key
@@ -129,8 +102,47 @@ def process(x,y):
     else:
         im_source = cv2.imread(f'Map/{x}_{y}.jpg',0)
         diffsource = cv2.subtract(difSubY,im_source) 
-        diffsource = remove_isolated_pixels(diffsource)  
+        diffsource = remove_isolated_pixels(diffsource)
         cv2.imwrite(f'test/{x}_{y}.jpg', diffsource)
+        kernel = np.ones((5,5),np.uint8)
+        diffsource = cv2.dilate(diffsource,kernel,iterations = 5)
+ 
+        blur = cv2.GaussianBlur(diffsource, (5, 5),cv2.BORDER_DEFAULT)
+        ret, thresh = cv2.threshold(blur, 200, 255,cv2.THRESH_BINARY_INV)
+        cv2.imwrite("test/thresh.png",thresh)
+        contours, hierarchies = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        blank = np.zeros(thresh.shape[:2],
+				dtype='uint8')
+
+        cv2.drawContours(blank, contours, -1,
+        				(255, 0, 0), 1)
+
+        cv2.imwrite("test/contours.png", blank)
+        list_click = []
+
+        for i in contours:
+            M = cv2.moments(i)
+            if M['m00'] != 0:
+                cx = int(M['m10']/M['m00'])
+                cy = int(M['m01']/M['m00'])
+                cv2.drawContours(diffsource, [i], -1, (0, 255, 0), 2)
+                cv2.circle(diffsource, (cx, cy), 7, (0, 0, 255), -1)
+                cv2.putText(diffsource, "center", (cx - 20, cy - 20),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            if cx != 859 and cy != 639:
+                list_click.append((cx+420,cy+18))
+
+        print(list_click)
+
+        pyautogui.keyDown('shift')
+        for coord in list_click:
+            pyautogui.click(coord)
+            time.sleep(0.2)
+        pyautogui.keyUp('shift')
+
+        
+        cv2.imwrite("test/center.png", diffsource)
+
     print(x,y)
      
 

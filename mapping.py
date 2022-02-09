@@ -1,12 +1,16 @@
 import pyautogui
 import time
-import pandas as pd
 import numpy as np
 import cv2
+import re
+import pytesseract
+import Levenshtein as lev
 from PIL import ImageGrab
 from PIL import Image
 from pynput import keyboard
 from pynput.keyboard import Key
+
+pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 mode = 1 #0map1run
 
@@ -32,16 +36,16 @@ def on_press(key):
     pass
 
 def process(x,y):
-    screen =  ImageGrab.grab(bbox=(420,1,2140,1280))
+    screen =  ImageGrab.grab(bbox=(410,1,2240,1280))
     pyautogui.keyDown('y')
     time.sleep(0.1)
-    screenY =  ImageGrab.grab(bbox=(420,1,2140,1280))
+    screenY =  ImageGrab.grab(bbox=(410,1,2240,1280))
     pyautogui.keyUp('y')
     time.sleep(0.1)
-    screen2 =  ImageGrab.grab(bbox=(420,1,2140,1280))
+    screen2 =  ImageGrab.grab(bbox=(410,1,2240,1280))
     pyautogui.keyDown('y')
     time.sleep(0.1)
-    screenY2 =  ImageGrab.grab(bbox=(420,1,2140,1280))
+    screenY2 =  ImageGrab.grab(bbox=(410,1,2240,1280))
     pyautogui.keyUp('y')
     
     screen = np.array(screen) 
@@ -105,7 +109,7 @@ def process(x,y):
         diffsource = remove_isolated_pixels(diffsource)
         cv2.imwrite(f'test/{x}_{y}.jpg', diffsource)
         kernel = np.ones((5,5),np.uint8)
-        diffsource = cv2.dilate(diffsource,kernel,iterations = 5)
+        diffsource = cv2.dilate(diffsource,kernel,iterations = 7)
  
         blur = cv2.GaussianBlur(diffsource, (5, 5),cv2.BORDER_DEFAULT)
         ret, thresh = cv2.threshold(blur, 200, 255,cv2.THRESH_BINARY_INV)
@@ -130,24 +134,54 @@ def process(x,y):
                 cv2.putText(diffsource, "center", (cx - 20, cy - 20),
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
             if cx != 859 and cy != 639:
-                list_click.append((cx+420,cy+18))
+                list_click.append((cx+420,cy+1))
 
         print(list_click)
 
-        pyautogui.keyDown('shift')
         for coord in list_click:
-            pyautogui.click(coord)
+            test_click(coord)
             time.sleep(0.2)
+            
         pyautogui.keyUp('shift')
 
         
         cv2.imwrite("test/center.png", diffsource)
 
     print(x,y)
-     
 
 x = int(input("x:"))
 y = int(input("y:"))
+
+def test_click(coord):
+    x_click,y_click = coord
+    average_coord = []
+    for x_test in range(x_click-20,x_click+20,10):
+        for y_test in range(y_click-20,y_click+20,10):
+            pyautogui.moveTo(x_test, y_test)
+            ressource_grab =  ImageGrab.grab(bbox=(x_click-20,y_click-200,x_click+450,y_click-20))
+            ressource_grab = np.array(ressource_grab) 
+            ressource_grab = ressource_grab[:, :, ::-1].copy() 
+            ressource_grab = cv2.cvtColor(ressource_grab, cv2.COLOR_BGR2HLS)
+            average = ressource_grab.mean(axis=0).mean(axis=0)
+            if len(average_coord)>0:
+                if average[1]<average_coord[0][0][0] and average[2]<average_coord[0][0][1]:
+                    pyautogui.keyDown('shift')
+                    pyautogui.click(x_test,y_test)
+                    pyautogui.keyUp('shift') 
+                    return True
+
+                elif average[1]==average_coord[0][0][0] and average[2]==average_coord[0][0][1]:
+                    pass
+                else:
+                    pyautogui.keyDown('shift')
+                    pyautogui.click(average_coord[0][1],average_coord[0][2])
+                    pyautogui.keyUp('shift') 
+                    return True
+            else:
+                average_coord.append((average[1:3],x_test,y_test))
+    pyautogui.keyDown('shift')
+    pyautogui.click(average_coord[0][1],average_coord[0][2])
+    pyautogui.keyUp('shift') 
 
 def on_release(key):
     #handle released keys

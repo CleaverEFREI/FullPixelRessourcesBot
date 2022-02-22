@@ -2,17 +2,47 @@ import pyautogui
 import time
 import numpy as np
 import cv2
-import re
-import pytesseract
-import Levenshtein as lev
 from PIL import ImageGrab
-from PIL import Image
 from pynput import keyboard
 from pynput.keyboard import Key
-
-pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
+import pygetwindow
+import win32gui
+import random
 
 mode = 1 #0map1run
+
+
+def hook():
+    # Scan des fenetres ouvertes
+    screen_name = "Not found"
+    print("Waiting for dofus ...")
+    while screen_name == "Not found":
+
+        screen_tiles_name = pygetwindow.getAllTitles()
+        for i in screen_tiles_name:
+            if "Dofus 2." in i:
+                # Si on trouve dofus
+                print("Hooked on : " + i)
+                screen_name = i
+                break
+
+    hwnd = win32gui.FindWindow(None, screen_name)
+    return hwnd
+
+def windows_size(hwnd):
+    rect = win32gui.GetWindowRect(hwnd)
+    x = rect[0]
+    y = rect[1]
+    w = rect[2] - x
+    h = rect[3] - y
+    return x, y, w, h
+
+hwnd = hook()
+x, y, w, h = windows_size(hwnd)
+
+x = int(input("x:"))
+y = int(input("y:"))
+NomFile = int(input("Nom du path à utiliser:"))
 
 def remove_isolated_pixels(image):
     connectivity = 8
@@ -36,16 +66,16 @@ def on_press(key):
     pass
 
 def process(x,y):
-    screen =  ImageGrab.grab(bbox=(410,1,2240,1280))
+    screen =  ImageGrab.grab(bbox=(int(410/2560*w),1,int(2240/2560*w),int(1280/1440*h)))
     pyautogui.keyDown('y')
     time.sleep(0.1)
-    screenY =  ImageGrab.grab(bbox=(410,1,2240,1280))
+    screenY =  ImageGrab.grab(bbox=(int(410/2560*w),1,int(2240/2560*w),int(1280/1440*h)))
     pyautogui.keyUp('y')
     time.sleep(0.1)
-    screen2 =  ImageGrab.grab(bbox=(410,1,2240,1280))
+    screen2 =  ImageGrab.grab(bbox=(int(410/2560*w),1,int(2240/2560*w),int(1280/1440*h)))
     pyautogui.keyDown('y')
     time.sleep(0.1)
-    screenY2 =  ImageGrab.grab(bbox=(410,1,2240,1280))
+    screenY2 =  ImageGrab.grab(bbox=(int(410/2560*w),1,int(2240/2560*w),int(1280/1440*h)))
     pyautogui.keyUp('y')
     
     screen = np.array(screen) 
@@ -136,29 +166,25 @@ def process(x,y):
             if cx != 859 and cy != 639:
                 list_click.append((cx+420,cy+1))
 
-        print(list_click)
-
         for coord in list_click:
             test_click(coord)
             time.sleep(0.2)
             
         pyautogui.keyUp('shift')
+        time.sleep(len(list_click)*4)
 
         
         cv2.imwrite("test/center.png", diffsource)
 
     print(x,y)
 
-x = int(input("x:"))
-y = int(input("y:"))
-
 def test_click(coord):
     x_click,y_click = coord
     average_coord = []
-    for x_test in range(x_click-20,x_click+20,10):
-        for y_test in range(y_click-20,y_click+20,10):
+    for x_test in range(x_click-20,x_click+20,5):
+        for y_test in range(y_click-20,y_click+20,5):
             pyautogui.moveTo(x_test, y_test)
-            ressource_grab =  ImageGrab.grab(bbox=(x_click-20,y_click-200,x_click+450,y_click-20))
+            ressource_grab =  ImageGrab.grab(bbox=(x_click-int(20/2560*w),y_click-int(200/1440*h),x_click+int(450/2560*w),y_click-int(20/1440*h)))
             ressource_grab = np.array(ressource_grab) 
             ressource_grab = ressource_grab[:, :, ::-1].copy() 
             ressource_grab = cv2.cvtColor(ressource_grab, cv2.COLOR_BGR2HLS)
@@ -202,6 +228,74 @@ def on_release(key):
         x = x + 1
         process(x,y)
 
+def moove_right():
+    
+    pyautogui.click(int(random.randint(950, 1000)/1000*w),int(random.randint(400, 600)/1000*h))
+    
+def moove_left():
+    
+    pyautogui.click(int(random.randint(0, 500)/1000*w),int(random.randint(400, 600)/1000*h))
+    
+def moove_up():
+    
+    pyautogui.click(int(random.randint(400, 600)/1000*w),int(random.randint(0, 500)/1000*h))
+    
+def moove_down():
+    
+    pyautogui.click(int(random.randint(400, 600)/1000*w),int(random.randint(950, 1000)/1000*h))
+
+def readpath():
+    path = []
+    with open(f'/path/{NomFile}.txt') as f:
+        lines = f.readlines()
+        for line in lines:
+            line = line.strip()
+            if line:                
+                line = line.split(":")                
+                path.append((line[0],line[1]))
+    return path
+
+def waiting_map():    
+    change_map =  ImageGrab.grab(bbox=(int(0.4*w),int(0.4*h),int(0.6*w),int(0.6*h)))  
+    screen = np.array(change_map) 
+    screen = screen[:, :, ::-1].copy() 
+    while cv2.countNonZero(screen) != 0:
+        change_map =  ImageGrab.grab(bbox=(int(0.4*w),int(0.4*h),int(0.6*w),int(0.6*h)))  
+        screen = np.array(change_map) 
+        screen = screen[:, :, ::-1].copy()    
+    while cv2.countNonZero(screen) == 0:
+        change_map =  ImageGrab.grab(bbox=(int(0.4*w),int(0.4*h),int(0.6*w),int(0.6*h)))  
+        screen = np.array(change_map) 
+        screen = screen[:, :, ::-1].copy()
+    time.sleep(1)
+    return True
+
+def moove_in_path(path_list,x,y):
+    for cord in path_list:
+        while cord[0] != x and cord[1] != y:
+            if cord[0] < x:
+                moove_right()
+                x = x + 1
+            if cord[0] > x:
+                moove_left()
+                x = x - 1
+            if cord[1] < y:
+                moove_up()
+                y = y + 1
+            if cord[1] > y:
+                moove_down()
+                y = y - 1
+            waiting_map()
+            process(x,y)
+
+
+
+
 time.sleep(1)
-with keyboard.Listener(on_press=on_press,on_release=on_release) as listener:
-    listener.join()
+if mode == 0:
+    with keyboard.Listener(on_press=on_press,on_release=on_release) as listener:
+        listener.join()
+else:
+    path_list = readpath()
+    moove_in_path(path_list)
+

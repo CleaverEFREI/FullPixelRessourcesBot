@@ -289,8 +289,6 @@ def moove_in_path(path_list,x,y):
             process(x,y)
 
 
-
-
 time.sleep(1)
 if mode == 0:
     with keyboard.Listener(on_press=on_press,on_release=on_release) as listener:

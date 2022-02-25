@@ -146,9 +146,9 @@ def process(x, y):
 
     image_X_Y = remove_isolated_pixels(difSubY)
     if mode == 0:
-        cv2.imwrite(f'Map/{x}_{y}.jpg', image_X_Y)
+        cv2.imwrite(f'C:/Users/Gailhac/ressourcesBot/Map/{x}_{y}.jpg', image_X_Y)
     else:
-        im_source = cv2.imread(f'Map/{x}_{y}.jpg', 0)
+        im_source = cv2.imread(f'C:/Users/Gailhac/ressourcesBot/Map/{x}_{y}.jpg', 0)
         diffsource = cv2.subtract(difSubY, im_source)
         diffsource = remove_isolated_pixels(diffsource)
         cv2.imwrite(f'test/{x}_{y}.jpg', diffsource)
@@ -274,7 +274,7 @@ def moove_down():
 
 def readpath():
     path = []
-    with open(f'C:/Users/louis/ressourcesBot/path/{NomFile}.txt') as f:
+    with open(f'C:/Users/Gailhac/ressourcesBot/path/{NomFile}.txt') as f:
         lines = f.readlines()
         for line in lines:
             line = line.strip()
@@ -289,16 +289,19 @@ def waiting_map():
         bbox=(int(0.4*w), int(0.4*h), int(0.6*w), int(0.6*h)))
     screen = np.array(change_map)
     screen = screen[:, :, ::-1].copy()
-    while cv2.countNonZero(screen) != 0:
+    black = cv2.countNonZero(screen)
+    while black != 0:
         change_map = ImageGrab.grab(
             bbox=(int(0.4*w), int(0.4*h), int(0.6*w), int(0.6*h)))
         screen = np.array(change_map)
         screen = screen[:, :, ::-1].copy()
-    while cv2.countNonZero(screen) == 0:
+    black = cv2.countNonZero(screen)
+    while black == 0:
         change_map = ImageGrab.grab(
             bbox=(int(0.4*w), int(0.4*h), int(0.6*w), int(0.6*h)))
         screen = np.array(change_map)
         screen = screen[:, :, ::-1].copy()
+        black = cv2.countNonZero(screen)
     time.sleep(1)
     return True
 
@@ -308,37 +311,41 @@ def moove_in_path(path_list, x, y):
     if path_list[0] == path_list[-1]:
         while True:
             for cord in path_list:
-                cord[0] = int(cord[0])
-                cord[1] = int(cord[1])
-                while cord[0] != x and cord[1] != y:
-                    if cord[0] < x:
+                cord0 = int(cord[0])
+                cord1 = int(cord[1])
+                print("Going",cord0,cord1)
+                while cord0 != x and cord1 != y:
+                    if cord0 < x:
                         moove_right()
                         x = x + 1
-                    if cord[0] > x:
+                    if cord0 > x:
                         moove_left()
                         x = x - 1
-                    if cord[1] < y:
+                    if cord1 < y:
                         moove_up()
                         y = y + 1
-                    if cord[1] > y:
+                    if cord1 > y:
                         moove_down()
                         y = y - 1
                     waiting_map()
                     process(x, y)
     else:
 
-        for cord in path_list:
-            while cord[0] != x and cord[1] != y:
-                if cord[0] < x:
+        for cord in path_list:    
+            cord0 = int(cord[0])
+            cord1 = int(cord[1])
+            print("Going",cord0,cord1)
+            while cord0 != x and cord1 != y:
+                if cord0 < x:
                     moove_right()
                     x = x + 1
-                if cord[0] > x:
+                if cord0 > x:
                     moove_left()
                     x = x - 1
-                if cord[1] < y:
+                if cord1 < y:
                     moove_up()
                     y = y + 1
-                if cord[1] > y:
+                if cord1 > y:
                     moove_down()
                     y = y - 1
                 waiting_map()
